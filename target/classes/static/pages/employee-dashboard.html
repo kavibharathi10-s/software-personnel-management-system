@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Dashboard - Software Personnel Management System</title>
+    <link rel="stylesheet" href="/css/employee.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Navigation Bar -->
+        <div class="navbar">
+            <div class="nav-brand">
+                <i class="fas fa-user-check"></i>
+                <h2>Employee Dashboard</h2>
+                <span class="welcome-text">Welcome, <span id="employeeName">Loading...</span></span>
+            </div>
+            <div class="nav-links">
+                <a href="#" onclick="showSection('myProjects')"><i class="fas fa-tasks"></i> My Projects</a>
+
+                <a href="#" onclick="showSection('raiseLeave')"><i class="fas fa-calendar-plus"></i> Raise Leave</a>
+                <a href="#" onclick="showSection('leaveHistory')"><i class="fas fa-history"></i> Leave History</a>
+                <a href="#" onclick="showSection('myMeetings')"><i class="fas fa-calendar-alt"></i> Meetings</a>
+                <a href="#" onclick="showSection('payslip')"><i class="fas fa-file-invoice-dollar"></i> Payslip</a>
+                <a href="#" onclick="showSection('profile')"><i class="fas fa-user-circle"></i> Profile</a>
+                <a href="#" onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            </div>
+        </div>
+
+        <!-- SECTION 1: MY TASKS -->
+        <div id="myProjects" class="section active">
+            <div class="section-header">
+                <h3><i class="fas fa-tasks"></i> My Assigned Tasks</h3>
+                <p class="section-desc">View tasks assigned to you and update their progress</p>
+            </div>
+            <div class="projects-grid" id="tasksContainer">
+                <div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Loading tasks...</div>
+            </div>
+        </div>
+
+
+        <!-- SECTION 2: RAISE LEAVE -->
+        <div id="raiseLeave" class="section" style="display: none;">
+            <div class="section-header">
+                <h3><i class="fas fa-calendar-plus"></i> Raise Leave Request</h3>
+                <p class="section-desc">Submit a leave request to your manager</p>
+            </div>
+            <div class="card">
+                <form id="leaveForm" onsubmit="raiseLeaveRequest(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><i class="fas fa-tag"></i> Leave Type:</label>
+                            <select id="leaveType" required>
+                                <option value="SICK">Sick Leave</option>
+                                <option value="CASUAL">Casual Leave</option>
+                                <option value="ANNUAL">Annual Leave</option>
+                                <option value="OTHER">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-calendar-day"></i> From Date:</label>
+                            <input type="date" id="leaveFrom" required>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-calendar-alt"></i> To Date:</label>
+                            <input type="date" id="leaveTo" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-comment"></i> Reason:</label>
+                        <textarea id="leaveReason" rows="3" placeholder="Please provide reason for leave..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Submit Request</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- SECTION 3: LEAVE HISTORY WITH CHART -->
+        <div id="leaveHistory" class="section" style="display: none;">
+            <div class="section-header">
+                <h3><i class="fas fa-history"></i> My Leave History</h3>
+                <p class="section-desc">View all your past and pending leave requests</p>
+            </div>
+            
+            <!-- Leave Chart -->
+            <div class="leave-chart-container" style="margin-bottom: 25px;">
+                <div class="card">
+                    <h4><i class="fas fa-chart-pie"></i> Leave Balance Overview</h4>
+                    <div style="display: flex; align-items: center; gap: 30px; flex-wrap: wrap;">
+                        <canvas id="leaveChart" style="max-width: 200px; max-height: 200px;"></canvas>
+                        <div>
+                            <p><strong>Total Annual Leave:</strong> <span id="totalLeave">20</span> days</p>
+                            <p><strong>Leave Taken:</strong> <span id="leaveTaken">0</span> days</p>
+                            <p><strong>Leave Remaining:</strong> <span id="leaveRemaining">20</span> days</p>
+                            <div class="progress-bar" style="width: 200px;">
+                                <div class="progress-fill" id="leaveProgressFill" style="width: 0%; background: #f59e0b;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <table id="leaveHistoryTable">
+                    <thead>
+                        <tr>
+                            <th>Leave Type</th>
+                            <th>From Date</th>
+                            <th>To Date</th>
+                            <th>Days</th>
+                            <th>Status</th>
+                            <th>Reason</th>
+                            <th>Rejection Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaveHistoryBody">
+                        <tr><td colspan="7" class="empty-state">No leave history found<\/td><\/tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SECTION 4: MY MEETINGS -->
+        <div id="myMeetings" class="section" style="display: none;">
+            <div class="section-header">
+                <h3><i class="fas fa-calendar-alt"></i> My Meetings</h3>
+                <p class="section-desc">View all scheduled meetings</p>
+            </div>
+            <div class="meetings-grid" id="meetingsContainer">
+                <div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Loading meetings...</div>
+            </div>
+        </div>
+
+        <!-- SECTION 5: PAYSLIP WITH MONTH & YEAR SELECTION -->
+        <div id="payslip" class="section" style="display: none;">
+            <div class="section-header">
+                <h3><i class="fas fa-file-invoice-dollar"></i> My Payslips</h3>
+                <p class="section-desc">Select month and year to view your payslip</p>
+            </div>
+            
+            <div class="card" style="margin-bottom: 20px;">
+                <div class="filter-bar" style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+                    <div class="form-group" style="flex: 1;">
+                        <label><i class="fas fa-calendar-month"></i> Select Month:</label>
+                        <select id="payslipMonth" class="form-control">
+                            <option value="">-- Select Month --</option>
+                            <option value="January">January</option>
+                            <option value="February">February</option>
+                            <option value="March">March</option>
+                            <option value="April">April</option>
+                            <option value="May">May</option>
+                            <option value="June">June</option>
+                            <option value="July">July</option>
+                            <option value="August">August</option>
+                            <option value="September">September</option>
+                            <option value="October">October</option>
+                            <option value="November">November</option>
+                            <option value="December">December</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label><i class="fas fa-calendar-year"></i> Select Year:</label>
+                        <select id="payslipYear" class="form-control">
+                            <option value="">-- Select Year --</option>
+                            <option value="2023">2023</option>
+                            <option value="2024" selected>2024</option>
+                            <option value="2025">2025</option>
+                            <option value="2026">2026</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="viewPayslip()">
+                        <i class="fas fa-eye"></i> View Payslip
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Payslip Display Area -->
+            <div id="payslipDisplay" style="display: none;">
+                <!-- Payslip will be shown here -->
+            </div>
+        </div>
+
+        <!-- SECTION 6: PROFILE -->
+        <div id="profile" class="section" style="display: none;">
+            <div class="section-header">
+                <h3><i class="fas fa-user-circle"></i> My Profile</h3>
+                <p class="section-desc">View and update your profile information</p>
+            </div>
+            <div class="profile-container">
+                <div class="profile-photo-section">
+                    <img id="profileImg" src="https://ui-avatars.com/api/?background=667eea&color=fff&size=150&name=Employee" alt="Profile" class="profile-photo">
+                    <div class="photo-upload">
+                        <label for="photoUpload" class="btn btn-secondary"><i class="fas fa-camera"></i> Change Photo</label>
+                        <input type="file" id="photoUpload" accept="image/*" onchange="uploadProfilePhoto(event)" style="display: none;">
+                    </div>
+                </div>
+                <div class="profile-info">
+                    <div class="info-row">
+                        <span class="info-label"><i class="fas fa-user"></i> Name:</span>
+                        <span class="info-value" id="userName">Loading...</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label"><i class="fas fa-envelope"></i> Email:</span>
+                        <span class="info-value" id="userEmail">Loading...</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label"><i class="fas fa-phone"></i> Phone:</span>
+                        <span class="info-value" id="userPhone">Loading...</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label"><i class="fas fa-briefcase"></i> Role:</span>
+                        <span class="info-value" id="userRole">Employee</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label"><i class="fas fa-building"></i> Department:</span>
+                        <span class="info-value" id="userDept">Loading...</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label"><i class="fas fa-graduation-cap"></i> Qualification:</span>
+                        <span class="info-value" id="userQualification">Loading...</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label"><i class="fas fa-calendar"></i> Joined:</span>
+                        <span class="info-value" id="userJoinDate">Loading...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Integrated Attendance Section in Profile -->
+            <div class="attendance-profile-section" style="margin-top: 30px;">
+                <div class="card">
+                    <div class="section-header" style="border-bottom: 2px solid #e2e8f0; margin-bottom: 20px; padding-bottom: 10px;">
+                        <h4><i class="fas fa-calendar-check"></i> My Daily Attendance</h4>
+                    </div>
+                    
+                    <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap; justify-content: center; padding: 20px;">
+                        <div id="attendanceActionArea" style="text-align: center;">
+                            <div id="attendanceStatus">
+                                <i class="fas fa-user-clock" style="font-size: 3rem; color: #667eea; margin-bottom: 15px; display: block;"></i>
+                                <h4 id="statusText">Ready to start your day?</h4>
+                            </div>
+                            <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+                                <button id="checkInBtn" class="btn btn-primary" onclick="markAttendance()">
+                                    <i class="fas fa-sign-in-alt"></i> Check-in
+                                </button>
+                                <button id="checkOutBtn" class="btn btn-secondary" onclick="checkout()" style="display: none;">
+                                    <i class="fas fa-sign-out-alt"></i> Check-out
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="currentTimeDisplay" style="flex: 1; min-width: 250px; border-left: 2px solid #e2e8f0; padding-left: 30px;">
+                            <div style="margin-bottom: 10px;">
+                                <span class="info-label" style="display: inline-block; width: 120px;">Check-in:</span>
+                                <span id="checkInTime" class="info-value">-</span>
+                            </div>
+                            <div>
+                                <span class="info-label" style="display: inline-block; width: 120px;">Check-out:</span>
+                                <span id="checkOutTime" class="info-value">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 20px;">
+                    <h4><i class="fas fa-history"></i> Recent Attendance History</h4>
+                    <div class="table-container" style="max-height: 300px; overflow-y: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Check-in</th>
+                                    <th>Check-out</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendanceTableBody">
+                                <tr><td colspan="4" class="empty-state">Loading history...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Task Work Modal -->
+    <div id="uploadModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-upload"></i> Submit Task Work</h3>
+                <span class="close" onclick="closeUploadModal()">&times;</span>
+            </div>
+            <form id="uploadForm" onsubmit="uploadTaskWork(event)">
+                <div style="padding: 20px;">
+                    <input type="hidden" id="uploadProjectId">
+                    <input type="hidden" id="uploadTaskId">
+                    <div class="form-group">
+                        <label><i class="fas fa-file"></i> Select Work Files:</label>
+                        <input type="file" id="projectFiles" multiple accept=".pdf,.doc,.docx,.zip,.jpg,.png">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-chart-line"></i> Task Progress (%):</label>
+                        <input type="number" id="projectProgress" min="0" max="100" placeholder="0-100" required>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-comment"></i> Comments:</label>
+                        <textarea id="projectComments" rows="2" placeholder="Describe the work completed..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-upload"></i> Submit Work</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="changePasswordModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-key"></i> Change Password</h3>
+                <span class="close" onclick="closePasswordModal()">&times;</span>
+            </div>
+            <form id="changePasswordForm" onsubmit="changePassword(event)">
+                <div style="padding: 20px;">
+                    <div class="form-group">
+                        <label><i class="fas fa-lock"></i> Current Password:</label>
+                        <input type="password" id="oldPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-lock"></i> New Password:</label>
+                        <input type="password" id="newPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-lock"></i> Confirm New Password:</label>
+                        <input type="password" id="confirmPassword" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Update Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Update Progress Modal -->
+    <div id="updateProgressModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-chart-line"></i> Update Project Progress</h3>
+                <span class="close" onclick="closeUpdateProgressModal()">&times;</span>
+            </div>
+            <div style="padding: 20px;">
+                <div class="form-group">
+                    <label>Enter Progress Percentage (0-100):</label>
+                    <input type="number" id="updateProgressInput" min="0" max="100" placeholder="e.g., 75" required>
+                </div>
+                <button class="btn btn-primary" onclick="confirmUpdateProgress()" style="width: 100%;">Update Progress</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Personal Details Modal -->
+    <div id="personalDetailsModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-edit"></i> My Personal Details</h3>
+                <span class="close" onclick="closePersonalDetailsModal()">&times;</span>
+            </div>
+            <form id="personalDetailsForm" onsubmit="updatePersonalDetails(event)">
+                <div style="padding: 20px; max-height: 500px; overflow-y: auto;">
+                    <div class="form-section">
+                        <h4><i class="fas fa-user-circle"></i> Basic Information</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Full Name:</label>
+                                <input type="text" id="pdName" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Email:</label>
+                                <input type="email" id="pdEmail" readonly>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Phone Number:</label>
+                                <input type="tel" id="pdPhone" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Date of Birth:</label>
+                                <input type="date" id="pdDob">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4><i class="fas fa-map-marker-alt"></i> Address Information</h4>
+                        <div class="form-group">
+                            <label>Permanent Address:</label>
+                            <textarea id="pdPermAddress" rows="2" placeholder="Enter your permanent address"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Current Address:</label>
+                            <textarea id="pdCurrAddress" rows="2" placeholder="Enter your current address"></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>City:</label>
+                                <input type="text" id="pdCity">
+                            </div>
+                            <div class="form-group">
+                                <label>State:</label>
+                                <input type="text" id="pdState">
+                            </div>
+                            <div class="form-group">
+                                <label>Pincode:</label>
+                                <input type="text" id="pdPincode">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4><i class="fas fa-heartbeat"></i> Personal Information</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Blood Group:</label>
+                                <select id="pdBloodGroup">
+                                    <option value="">Select Blood Group</option>
+                                    <option value="A+">A+</option>
+                                    <option value="A-">A-</option>
+                                    <option value="B+">B+</option>
+                                    <option value="B-">B-</option>
+                                    <option value="O+">O+</option>
+                                    <option value="O-">O-</option>
+                                    <option value="AB+">AB+</option>
+                                    <option value="AB-">AB-</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Emergency Contact:</label>
+                                <input type="tel" id="pdEmergency" placeholder="Emergency phone number">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>PAN Number:</label>
+                                <input type="text" id="pdPan" placeholder="ABCDE1234F">
+                            </div>
+                            <div class="form-group">
+                                <label>Aadhar Number:</label>
+                                <input type="text" id="pdAadhar" placeholder="1234 5678 9012">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4><i class="fas fa-university"></i> Bank Details</h4>
+                        <div class="form-group">
+                            <label>Bank Name:</label>
+                            <input type="text" id="pdBankName" placeholder="e.g., State Bank of India">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Account Number:</label>
+                                <input type="text" id="pdAccountNo">
+                            </div>
+                            <div class="form-group">
+                                <label>IFSC Code:</label>
+                                <input type="text" id="pdIfsc" placeholder="SBIN0001234">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4><i class="fas fa-briefcase"></i> Employment Details</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Department:</label>
+                                <input type="text" id="pdDept" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>Designation:</label>
+                                <input type="text" id="pdDesignation" readonly>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Employee ID:</label>
+                                <input type="text" id="pdEmpId" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>Joining Date:</label>
+                                <input type="text" id="pdJoinDate" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Changes</button>
+                        <button type="button" class="btn btn-secondary" onclick="closePersonalDetailsModal()">Cancel</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/employee.js"></script>
+</body>
+</html>

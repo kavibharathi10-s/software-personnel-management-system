@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Software Personnel Management System</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="login-container">
+            <h1>Software Personnel Management System</h1>
+            <div class="login-box">
+                <h2>Login</h2>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password:</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <button type="submit" class="btn-login">Login</button>
+                </form>
+                <p class="signup-link">New user? <a href="#" onclick="showSignup()">Sign up here</a></p>
+            </div>
+
+            <div class="signup-box" style="display: none;">
+                <h2>Sign Up</h2>
+                <form id="signupForm" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="signupName">Full Name:</label>
+                        <input type="text" id="signupName" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signupEmail">Email:</label>
+                        <input type="email" id="signupEmail" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signupPhone">Phone:</label>
+                        <input type="tel" id="signupPhone" name="phone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signupRole">Role:</label>
+                        <select id="signupRole" name="role" required>
+                            <option value="">Select Role</option>
+                            <option value="EMPLOYEE">Employee</option>
+                            <option value="MANAGER">Manager</option>
+                            <option value="HR">HR</option>
+                            <option value="CLIENT">Client</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="qualification">Qualification:</label>
+                        <input type="text" id="qualification" name="qualification" required>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-file-pdf"></i> Upload Certificate (PDF/Image):</label>
+                        <input type="file" id="certificate" accept=".pdf,.jpg,.png,.jpeg">
+                    </div>
+                    <button type="submit" class="btn-signup">Submit for Approval</button>
+                </form>
+                <p class="login-link">Already have an account? <a href="#" onclick="showLogin()">Login here</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/script.js"></script>
+</body>
+</html>

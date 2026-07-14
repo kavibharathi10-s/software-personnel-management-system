@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Dashboard - Software Personnel Management System</title>
+    <link rel="stylesheet" href="/css/hr.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .fade-in-slide {
+            animation: fadeInSlide 0.5s ease-out forwards;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .highlight-performer {
+            border-left: 5px solid #48bb78 !important;
+            background-color: #f0fff4 !important;
+        }
+        @keyframes fadeInSlide {
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Navigation Bar -->
+        <div class="navbar">
+            <div class="nav-brand">
+                <i class="fas fa-user-tie"></i>
+                <span class="welcome-text">Welcome, <span id="hrName">Loading...</span></span>
+            </div>
+            <div class="nav-links">
+                <a href="#" onclick="showSection('pendingRequests')"><i class="fas fa-clock"></i> Pending Requests</a>
+                <a href="#" onclick="showSection('allEmployees')"><i class="fas fa-users"></i> All Employees</a>
+                <a href="#" onclick="showSection('attendance')"><i class="fas fa-calendar-alt"></i> Attendance Monitor</a>
+                <a href="#" onclick="showSection('projects')"><i class="fas fa-project-diagram"></i> Projects</a>
+                <a href="#" onclick="showSection('performance')"><i class="fas fa-chart-line"></i> Performance</a>
+                <a href="#" onclick="showSection('payroll')"><i class="fas fa-rupee-sign"></i> Payroll</a>
+                <a href="#" onclick="showSection('meetings')"><i class="fas fa-calendar-alt"></i> Meetings</a>
+                <a href="#" onclick="showSection('profile')"><i class="fas fa-user-circle"></i> Profile</a>
+                <a href="#" onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            </div>
+        </div>
+
+        <!-- SECTION 1: PENDING REQUESTS -->
+        <div id="pendingRequests" class="section active">
+            <div class="section-header">
+                <h3><i class="fas fa-clock"></i> Pending Signup Requests</h3>
+                <p class="section-desc">Review and approve/reject user registrations</p>
+            </div>
+            <div class="table-container">
+                <table id="requestsTable">
+                    <thead>
+                        <tr><th>Name</th><th>Email</th><th>Role</th><th>Qualification</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody id="requestsTableBody">
+                        <tr><td colspan="5" class="empty-state">Loading...<\/td><\/tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SECTION 2: ALL EMPLOYEES -->
+        <div id="allEmployees" class="section" style="display: none;">
+            <div class="section-header">
+                <h3><i class="fas fa-users"></i> All Employees</h3>
+                <p class="section-desc">Manage employee details</p>
+            </div>
+            <div class="action-bar">
+                <button class="btn btn-download" onclick="downloadEmployeesCSV()"><i class="fas fa-file-excel"></i> Download Excel</button>
+                <button class="btn btn-refresh" onclick="loadAllEmployees()"><i class="fas fa-sync-alt"></i> Refresh</button>
+            </div>
+            <div class="filter-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" id="employeeFilter" placeholder="Search..." onkeyup="filterEmployees()">
+            </div>
+            <div class="table-container">
+                <table id="employeesTable">
+                    <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Department</th><th>Designation</th><th>Salary</th><th>Performance</th><th>Auto Increment</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody id="employeesTableBody"><tr><td colspan="10" class="empty-state">Loading...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SECTION 2.5: ATTENDANCE MONITOR -->
+        <div id="attendance" class="section" style="display: none;">
+            <div class="section-header">
+                <h3><i class="fas fa-calendar-alt"></i> Global Attendance Monitor</h3>
+                <p class="section-desc">View daily attendance status for all personnel</p>
+            </div>
+            <div class="card" style="margin-bottom: 20px;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Select Date:</label>
+                        <input type="date" id="attendanceDateFilter" onchange="loadGlobalAttendance()">
+                    </div>
+                </div>
+            </div>
+            <div class="table-container">
+                <table id="globalAttendanceTable">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Check-in Time</th>
+                            <th>Check-out Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="globalAttendanceBody">
+                        <tr><td colspan="4" class="empty-state">Select a date to view attendance</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+
+
+        <!-- SECTION 3: PROJECTS -->
+        <div id="projects" class="section" style="display: none;">
+            <div class="section-header"><h3><i class="fas fa-project-diagram"></i> Client Projects</h3></div>
+            <div class="projects-grid" id="projectsContainer"><div class="empty-state">Loading...</div></div>
+        </div>
+
+        <!-- SECTION 4: PERFORMANCE -->
+        <div id="performance" class="section" style="display: none;">
+            <div class="section-header">
+                <h3><i class="fas fa-chart-line"></i> Performance Analytics</h3>
+                <p class="section-desc">Track and rank team & manager performance</p>
+            </div>
+            
+            <!-- Rankings Section -->
+            <div class="card" style="margin-bottom: 25px;">
+                <h4 style="margin-bottom: 15px;"><i class="fas fa-trophy" style="color: #f59e0b;"></i> Top 5 Performers Rankings</h4>
+                <div id="topRankingsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <!-- Top 5 dynamically populated by hr.js -->
+                    <div class="empty-state">Loading rankings...</div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 20px;">
+                <!-- Manager Performance Chart -->
+                <div class="card">
+                    <h4 style="color: #667eea; margin-bottom: 15px;"><i class="fas fa-user-tie"></i> Manager Performance Comparison</h4>
+                    <div style="min-height: 350px; max-height: 600px; overflow-y: auto; overflow-x: hidden;">
+                        <div id="managerChartInner" style="height: 350px;">
+                            <canvas id="managerPerfChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Employee Performance Chart -->
+                <div class="card">
+                    <h4 style="color: #764ba2; margin-bottom: 15px;"><i class="fas fa-users"></i> Employee Performance Overview</h4>
+                    <div style="min-height: 350px; max-height: 600px; overflow-y: auto; overflow-x: hidden;">
+                        <div id="employeeChartInner" style="height: 350px;">
+                            <canvas id="employeePerfChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="performance-grid">
+                <div class="card"><h4>Project Growth Trends</h4><canvas id="monthlyGrowthChart"></canvas></div>
+            </div>
+        </div>
+
+        <!-- SECTION 5: PAYROLL -->
+        <div id="payroll" class="section" style="display: none;">
+            <div class="section-header"><h3><i class="fas fa-rupee-sign"></i> Payroll Management</h3></div>
+            <div class="card">
+                <h4>Set Manager Salary</h4>
+                <form id="salaryForm" onsubmit="setSalaryStructure(event)">
+                    <div class="form-row">
+                        <div class="form-group"><label>Select Manager:</label><select id="salaryUserId" required><option value="">Select Manager</option></select></div>
+                        <div class="form-group"><label>Basic Salary (₹):</label><input type="number" id="basicSalary" required></div>
+                        <div class="form-group"><label>Allowances (₹):</label><input type="number" id="allowances" value="0"></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Update Salary</button>
+                </form>
+            </div>
+            <div class="action-bar"><button class="btn btn-success" onclick="showProcessSalaryModal()">Process Manager Salary</button></div>
+            <div class="table-container">
+                <h4>Payment History</h4>
+                <table id="payrollTable"><thead><tr><th>Name</th><th>Role</th><th>Basic</th><th>Allowances</th><th>Deductions</th><th>Net</th><th>Rating (%)</th><th>Month</th><th>Status</th><th>Payslip</th></tr></thead><tbody id="payrollTableBody"><tr><td colspan="10" class="empty-state">No records</td></tr></tbody></table>
+            </div>
+        </div>
+
+        <!-- SECTION 6: MEETINGS -->
+        <div id="meetings" class="section" style="display: none;">
+            <div class="section-header"><h3><i class="fas fa-calendar-alt"></i> Schedule Meeting</h3></div>
+            <div class="card">
+                <form id="meetingForm" onsubmit="scheduleMeeting(event)">
+                    <div class="form-row">
+                        <div class="form-group"><label>Title:</label><input type="text" id="meetingTitle" required></div>
+                        <div class="form-group"><label>Date:</label><input type="date" id="meetingDate" required></div>
+                        <div class="form-group"><label>Time:</label><input type="time" id="meetingTime" required></div>
+                    </div>
+                    <div class="form-group"><label>Purpose:</label><textarea id="meetingPurpose" rows="2" required></textarea></div>
+                    <div class="form-group"><label>Location/Link:</label><input type="text" id="meetingLocation" required></div>
+                    <div class="form-group">
+    <label><i class="fas fa-user-tie"></i> Select Manager:</label>
+    <select id="meetingAttendees" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd;">
+        <option value="">-- Select Manager --</option>
+    </select>
+</div>
+                    <button type="submit" class="btn btn-primary">Schedule Meeting</button>
+                </form>
+            </div>
+            <div class="meetings-list"><h4>Upcoming Meetings</h4><div id="meetingsContainer" class="meetings-grid"></div></div>
+        </div>
+
+        <!-- SECTION 7: PROFILE -->
+        <div id="profile" class="section" style="display: none;">
+            <div class="section-header"><h3><i class="fas fa-user-circle"></i> My Profile</h3></div>
+            <div class="profile-container">
+                <div class="profile-photo-section"><img id="profileImg" class="profile-photo"><div class="photo-upload"><label for="photoUpload" class="btn btn-secondary">Change Photo</label><input type="file" id="photoUpload" accept="image/*" onchange="uploadProfilePhoto(event)" style="display:none"></div></div>
+                <div class="profile-info">
+                    <div class="info-row"><span class="info-label">Name:</span><span class="info-value" id="userName">Loading...</span></div>
+                    <div class="info-row"><span class="info-label">Email:</span><span class="info-value" id="userEmail">Loading...</span></div>
+                    <div class="info-row"><span class="info-label">Role:</span><span class="info-value" id="userRole">HR</span></div>
+                </div>
+            </div>
+            <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+    <button class="btn btn-primary" onclick="openPersonalDetailsModal()">
+        <i class="fas fa-user-edit"></i> Edit Personal Details
+    </button>
+    <button class="btn btn-secondary" onclick="showChangePasswordModal()">
+        <i class="fas fa-key"></i> Change Password
+    </button>
+</div>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    <div id="editEmployeeModal" class="modal" style="display:none"><div class="modal-content"><div class="modal-header"><h3>Edit Employee</h3><span class="close" onclick="closeEditModal()">&times;</span></div><form id="editEmployeeForm" onsubmit="updateEmployeeDetails(event)"><div style="padding:20px"><input type="hidden" id="editUserId"><div class="form-group"><label>Name:</label><input type="text" id="editName" readonly></div><div class="form-group"><label>Email:</label><input type="text" id="editEmail" readonly></div><div class="form-group"><label>Department:</label><input type="text" id="editDepartment"></div><div class="form-group"><label>Designation:</label><input type="text" id="editDesignation"></div><div class="form-group"><label>Salary (₹):</label><input type="number" id="editSalary"></div><div class="form-group"><label>Performance (1-5):</label><input type="number" id="editPerformance" step="0.1" min="0" max="5"></div><button type="submit" class="btn btn-primary">Update</button></div></form></div></div>
+
+    <div id="removeEmployeeModal" class="modal" style="display:none"><div class="modal-content"><div class="modal-header"><h3>Remove Employee</h3><span class="close" onclick="closeRemoveModal()">&times;</span></div><form id="removeEmployeeForm" onsubmit="confirmRemoveEmployee(event)"><div style="padding:20px"><input type="hidden" id="removeUserId"><div class="form-group"><label>Employee:</label><input type="text" id="removeUserName" readonly></div><div class="form-group"><label>Reason:</label><textarea id="removeReason" rows="3" required></textarea></div><div class="form-group"><label>Reallocate Employees To:</label><select id="reallocateManagerSelect"><option value="">Select New Manager</option></select></div><button type="submit" class="btn btn-danger">Confirm Remove</button></div></form></div></div>
+
+    <div id="processSalaryModal" class="modal" style="display:none"><div class="modal-content"><div class="modal-header"><h3>Process Salary</h3><span class="close" onclick="closeSalaryModal()">&times;</span></div><form id="processSalaryForm" onsubmit="processSalarySubmit(event)"><div style="padding:20px"><div class="form-group"><label>Manager:</label><select id="processManagerId" required></select></div><div class="form-group"><label>Month:</label><select id="processMonth"><option value="January">January</option><option value="February">February</option><option value="March">March</option><option value="April">April</option><option value="May">May</option><option value="June">June</option><option value="July">July</option><option value="August">August</option><option value="September">September</option><option value="October">October</option><option value="November">November</option><option value="December">December</option></select></div><div class="form-group"><label>Year:</label><input type="number" id="processYear" value="2024"></div><button type="submit" class="btn btn-success">Process</button></div></form></div></div>
+
+    <div id="changePasswordModal" class="modal" style="display:none"><div class="modal-content"><div class="modal-header"><h3>Change Password</h3><span class="close" onclick="closePasswordModal()">&times;</span></div><form id="changePasswordForm" onsubmit="changePassword(event)"><div style="padding:20px"><div class="form-group"><label>Current Password:</label><input type="password" id="oldPassword" required></div><div class="form-group"><label>New Password:</label><input type="password" id="newPassword" required></div><div class="form-group"><label>Confirm:</label><input type="password" id="confirmPassword" required></div><button type="submit" class="btn btn-primary">Update</button></div></form></div></div>
+
+    <div id="projectDetailsModal" class="modal" style="display:none"><div class="modal-content" style="max-width:600px"><div class="modal-header"><h3>Project Details</h3><span class="close" onclick="closeProjectDetailsModal()">&times;</span></div><div id="projectDetailsContent"></div></div></div>
+
+    <div id="payslipModal" class="modal" style="display:none"><div class="modal-content" style="max-width:500px"><div class="modal-header"><h3>Payslip</h3><span class="close" onclick="closePayslipModal()">&times;</span></div><div id="payslipContent"></div></div></div>
+
+    <!-- Personal Details Modal -->
+<div id="personalDetailsModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 800px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-user-edit"></i> My Personal Details</h3>
+            <span class="close" onclick="closePersonalDetailsModal()">&times;</span>
+        </div>
+        <form id="personalDetailsForm" onsubmit="updatePersonalDetails(event)">
+            <div style="padding: 20px; max-height: 500px; overflow-y: auto;">
+                <div class="form-section">
+                    <h4><i class="fas fa-user-circle"></i> Basic Information</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Full Name:</label>
+                            <input type="text" id="pdName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Email:</label>
+                            <input type="email" id="pdEmail" readonly>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Phone Number:</label>
+                            <input type="tel" id="pdPhone" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Date of Birth:</label>
+                            <input type="date" id="pdDob">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h4><i class="fas fa-map-marker-alt"></i> Address Information</h4>
+                    <div class="form-group">
+                        <label>Permanent Address:</label>
+                        <textarea id="pdPermAddress" rows="2" placeholder="Enter your permanent address"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Current Address:</label>
+                        <textarea id="pdCurrAddress" rows="2" placeholder="Enter your current address"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>City:</label>
+                            <input type="text" id="pdCity">
+                        </div>
+                        <div class="form-group">
+                            <label>State:</label>
+                            <input type="text" id="pdState">
+                        </div>
+                        <div class="form-group">
+                            <label>Pincode:</label>
+                            <input type="text" id="pdPincode">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h4><i class="fas fa-heartbeat"></i> Personal Information</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Blood Group:</label>
+                            <select id="pdBloodGroup">
+                                <option value="">Select Blood Group</option>
+                                <option value="A+">A+</option>
+                                <option value="A-">A-</option>
+                                <option value="B+">B+</option>
+                                <option value="B-">B-</option>
+                                <option value="O+">O+</option>
+                                <option value="O-">O-</option>
+                                <option value="AB+">AB+</option>
+                                <option value="AB-">AB-</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Emergency Contact:</label>
+                            <input type="tel" id="pdEmergency" placeholder="Emergency phone number">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>PAN Number:</label>
+                            <input type="text" id="pdPan" placeholder="ABCDE1234F">
+                        </div>
+                        <div class="form-group">
+                            <label>Aadhar Number:</label>
+                            <input type="text" id="pdAadhar" placeholder="1234 5678 9012">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h4><i class="fas fa-university"></i> Bank Details</h4>
+                    <div class="form-group">
+                        <label>Bank Name:</label>
+                        <input type="text" id="pdBankName" placeholder="e.g., State Bank of India">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Account Number:</label>
+                            <input type="text" id="pdAccountNo">
+                        </div>
+                        <div class="form-group">
+                            <label>IFSC Code:</label>
+                            <input type="text" id="pdIfsc" placeholder="SBIN0001234">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h4><i class="fas fa-briefcase"></i> Employment Details</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Department:</label>
+                            <input type="text" id="pdDept" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Designation:</label>
+                            <input type="text" id="pdDesignation" readonly>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Employee ID:</label>
+                            <input type="text" id="pdEmpId" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Joining Date:</label>
+                            <input type="text" id="pdJoinDate" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Changes</button>
+                    <button type="button" class="btn btn-secondary" onclick="closePersonalDetailsModal()">Cancel</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+    <script src="/js/hr.js"></script>
+</body>
+</html>
